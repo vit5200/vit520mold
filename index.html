@@ -1,173 +1,253 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" data-theme="auto">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#4A7C59">
+<meta name="theme-color" content="#4A7C59" id="metaTheme">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="昇祿模具">
 <title>昇祿鋁業 - 模具雲端管理系統</title>
+<script>
+// 先套用外觀設定，避免畫面閃爍
+(function(){try{var s=JSON.parse(localStorage.getItem('shenglu_mold_settings')||'{}');document.documentElement.setAttribute('data-theme',s.theme||'auto');document.documentElement.style.setProperty('--fs',s.fs||1);}catch(e){}})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --primary:#4A7C59; --primary-dark:#386043; --secondary:#8FC0A9; --accent:#FAF3DD;
-  --text:#2b2f2c; --muted:#6b736e; --bg:#F4F7F5; --card:#fff; --line:#e3e9e5;
-  --danger:#d9534f; --blue:#2980b9; --radius:14px;
-  --nav-h:62px; --header-h:60px;
+  --fs:1;
+  --primary:#4A7C59; --btn:#4A7C59; --btn-press:#386043; --secondary:#8FC0A9; --accent:#FAF3DD; --note-text:#6b5d2e;
+  --text:#2b2f2c; --muted:#6b736e; --bg:#F4F7F5; --card:#fff; --soft:#F4F7F5; --line:#e3e9e5; --input:#fff;
+  --header:#4A7C59; --danger:#d9534f; --danger-soft:#fdecea; --blue:#2471a3; --line-green:#06C755; --dark-btn:#2c3e50;
+  --radius:14px; --nav-h:62px; --header-h:60px;
   --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+  color-scheme:light;
 }
+html[data-theme="dark"]{
+  --primary:#7cc191; --btn:#3d7a50; --btn-press:#2f6340; --secondary:#3f6b52; --accent:#2d2919; --note-text:#e3d49e;
+  --text:#e5ebe7; --muted:#9aa69f; --bg:#101412; --card:#1a201d; --soft:#232a26; --line:#2e3833; --input:#151a17;
+  --header:#22392a; --danger:#e5605c; --danger-soft:#3a2120; --blue:#79b8ea; --dark-btn:#3a4a5c;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){
+  html[data-theme="auto"]{
+    --primary:#7cc191; --btn:#3d7a50; --btn-press:#2f6340; --secondary:#3f6b52; --accent:#2d2919; --note-text:#e3d49e;
+    --text:#e5ebe7; --muted:#9aa69f; --bg:#101412; --card:#1a201d; --soft:#232a26; --line:#2e3833; --input:#151a17;
+    --header:#22392a; --danger:#e5605c; --danger-soft:#3a2120; --blue:#79b8ea; --dark-btn:#3a4a5c;
+    color-scheme:dark;
+  }
+}
+html{font-size:calc(15px * var(--fs))}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:1rem;line-height:1.45;-webkit-text-size-adjust:100%;transition:background .2s}
 body.no-scroll{overflow:hidden}
 input,select,button,textarea{font:inherit;color:inherit}
-input,select{font-size:16px}/* 16px 以上可避免 iOS 點輸入框時自動放大 */
+input,select{font-size:max(16px,1rem)}/* 16px 以上可避免 iOS 點輸入框時自動放大 */
 button{cursor:pointer}
+[hidden]{display:none!important}
 
 /* ===== 頂部標題列 ===== */
-.app-header{position:sticky;top:0;z-index:20;background:var(--primary);color:#fff;padding:calc(10px + var(--safe-t)) 16px 10px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.header-logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-weight:800;font-size:17px;flex-shrink:0}
-.app-header h1{font-size:17px;font-weight:700;letter-spacing:.5px;line-height:1.2}
-.app-header small{display:block;font-size:11px;opacity:.85;font-weight:400}
+.app-header{position:sticky;top:0;z-index:20;background:var(--header);color:#fff;padding:calc(10px + var(--safe-t)) 12px 10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.header-logo{width:2.4rem;height:2.4rem;border-radius:10px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-weight:800;font-size:1.13rem;flex-shrink:0}
+.app-header .ttl{flex:1;min-width:0}
+.app-header h1{font-size:1.13rem;font-weight:700;letter-spacing:.5px;line-height:1.2}
+.app-header small{display:block;font-size:.75rem;opacity:.85;font-weight:400}
+.icon-btn{border:none;background:rgba(255,255,255,.16);color:#fff;width:2.7rem;height:2.7rem;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+.icon-btn svg{width:1.4rem;height:1.4rem}
 
-main{max-width:760px;margin:0 auto;padding:14px 14px calc(var(--nav-h) + var(--safe-b) + 24px)}
+main{max-width:760px;margin:0 auto;padding:14px 14px calc(var(--nav-h) + var(--safe-b) + 90px)}
 .view{display:none}
 .view.active{display:block;animation:fade .18s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
-.card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:14px}
-.card h2{font-size:16px;color:var(--primary);margin-bottom:12px}
-.muted{color:var(--muted);font-size:13px}
-.empty{text-align:center;color:#999;padding:40px 10px}
-.empty.small{padding:18px 10px;font-size:14px}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:14px}
+.card h2{font-size:1.07rem;color:var(--primary);margin-bottom:12px}
+.muted{color:var(--muted);font-size:.87rem}
+.empty{text-align:center;color:var(--muted);padding:40px 10px}
+.empty.small{padding:18px 10px;font-size:.93rem}
 
 /* ===== 按鈕 ===== */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:11px;padding:0 16px;height:46px;font-weight:700;font-size:15px;background:var(--primary);color:#fff;transition:.15s}
-.btn:active{transform:scale(.97);background:var(--primary-dark)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:11px;padding:0 1rem;min-height:3.07rem;font-weight:700;font-size:1rem;background:var(--btn);color:#fff;transition:.15s;text-align:center;line-height:1.2}
+.btn:active{transform:scale(.97);background:var(--btn-press)}
 .btn:disabled{opacity:.55}
-.btn.dark{background:#2c3e50}
-.btn.outline{background:#fff;color:var(--primary);border:1.5px solid var(--secondary)}
+.btn.dark{background:var(--dark-btn)}
+.btn.outline{background:var(--card);color:var(--primary);border:1.5px solid var(--secondary)}
 .btn.danger{background:var(--danger)}
+.btn.line{background:var(--line-green)}
 .btn.block{width:100%}
-.btn.sm{height:38px;font-size:14px;padding:0 12px;border-radius:9px}
-.btn-mini{border:none;border-radius:8px;padding:6px 11px;font-size:13px;font-weight:700;background:var(--bg);color:var(--text)}
-.btn-mini.danger{background:#fdecea;color:var(--danger)}
+.btn.sm{min-height:2.55rem;font-size:.93rem;padding:0 .8rem;border-radius:9px}
+.btn-mini{border:none;border-radius:8px;padding:.4rem .75rem;font-size:.87rem;font-weight:700;background:var(--soft);color:var(--text)}
+.btn-mini.danger{background:var(--danger-soft);color:var(--danger)}
+.btn-mini.line{background:var(--line-green);color:#fff}
 
 /* ===== 首頁 ===== */
-.stat-hero{background:linear-gradient(135deg,var(--primary),#6a9e79);color:#fff;border-radius:var(--radius);padding:20px;margin-bottom:14px;box-shadow:0 4px 14px rgba(74,124,89,.3)}
-.stat-hero .label{font-size:13px;opacity:.9}
-.stat-hero .num{font-size:40px;font-weight:800;line-height:1.1;margin:4px 0}
-.stat-hero .sub{display:flex;gap:16px;font-size:13px;opacity:.95;flex-wrap:wrap}
+.stat-hero{background:linear-gradient(135deg,var(--header),#6a9e79);color:#fff;border-radius:var(--radius);padding:20px;margin-bottom:14px;box-shadow:0 4px 14px rgba(74,124,89,.3)}
+.stat-hero .label{font-size:.87rem;opacity:.9}
+.stat-hero .num{font-size:2.6rem;font-weight:800;line-height:1.1;margin:4px 0}
+.stat-hero .sub{display:flex;gap:16px;font-size:.87rem;opacity:.95;flex-wrap:wrap}
 .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.cat-tile{border:none;background:var(--bg);border-radius:12px;padding:12px 6px;text-align:center;border-left:4px solid var(--c,#ccc)}
+.cat-tile{border:none;background:var(--soft);border-radius:12px;padding:12px 6px;text-align:center;border-left:4px solid var(--c,#ccc)}
 .cat-tile:active{transform:scale(.97)}
-.cat-tile b{display:block;font-size:20px;color:var(--text)}
-.cat-tile span{font-size:12.5px;color:var(--muted)}
+.cat-tile b{display:block;font-size:1.33rem;color:var(--text)}
+.cat-tile span{font-size:.83rem;color:var(--muted)}
 .quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.note{background:var(--accent);border-radius:12px;padding:12px 14px;font-size:13px;color:#6b5d2e;line-height:1.6}
+.note{background:var(--accent);border-radius:12px;padding:12px 14px;font-size:.87rem;color:var(--note-text);line-height:1.6}
 
 /* ===== 搜尋 ===== */
-.search-sticky{position:sticky;top:var(--header-h);z-index:15;background:var(--bg);margin:-14px -14px 10px;padding:12px 14px 8px}
+.search-sticky{position:sticky;top:var(--header-h);z-index:15;background:var(--bg);margin:-14px -14px 4px;padding:12px 14px 4px}
 .search-box{position:relative}
-.search-box svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:19px;height:19px;color:var(--muted)}
-.search-box input{width:100%;height:48px;border:2px solid var(--secondary);border-radius:13px;padding:0 44px 0 42px;background:#fff;outline:none}
+.search-box svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:1.25rem;height:1.25rem;color:var(--muted)}
+.search-box input{width:100%;height:3.2rem;border:2px solid var(--secondary);border-radius:13px;padding:0 44px 0 42px;background:var(--input);outline:none}
 .search-box input:focus{border-color:var(--primary)}
-.clear-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:none;font-size:20px;color:#999}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.clear-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:none;font-size:1.33rem;color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex-shrink:0;border:1.5px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:14px;color:var(--muted);white-space:nowrap}
-.chip.active{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:700}
-.toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:6px}
-.toolbar .count{font-size:13px;color:var(--muted)}
+.chip{flex-shrink:0;border:1.5px solid var(--line);background:var(--card);border-radius:20px;padding:.4rem .95rem;font-size:.93rem;color:var(--muted);white-space:nowrap}
+.chip.active{background:var(--btn);border-color:var(--btn);color:#fff;font-weight:700}
+
+.dim-panel{background:var(--card);border-radius:var(--radius);padding:12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.dim-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.dim-panel-head b{font-size:.93rem;color:var(--primary)}
+.dim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(6.5rem,1fr));gap:8px}
+.dim-field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dim-field span{font-size:.8rem;color:var(--muted);font-weight:700}
+.dim-field input,.dim-field select{height:2.9rem;border:1.5px solid var(--line);border-radius:10px;padding:0 10px;background:var(--input);outline:none;width:100%;min-width:0}
+.dim-field input:focus{border-color:var(--primary)}
+.dim-field input.filled{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 8%,var(--input))}
+
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 10px;flex-wrap:wrap}
+.toolbar .count{font-size:.87rem;color:var(--muted)}
+.toolbar .acts{display:flex;gap:8px}
 
 .mold-list{display:flex;flex-direction:column;gap:10px}
-.mold-card{background:#fff;border-radius:var(--radius);padding:13px 14px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:4px solid var(--c,#ccc);cursor:pointer}
-.mold-card:active{background:#fafcfb}
+.mold-card{background:var(--card);border-radius:var(--radius);padding:13px 14px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid var(--c,#ccc);cursor:pointer;position:relative}
+.mold-card:active{opacity:.85}
+.mold-card.selected{outline:2.5px solid var(--primary);background:color-mix(in srgb,var(--primary) 7%,var(--card))}
 .mc-top{display:flex;align-items:center;gap:8px}
-.badge{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--cbg,#eee);color:var(--c,#555);white-space:nowrap}
-.mc-model{font-size:18px;font-weight:800;color:var(--blue);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mc-weight{font-weight:800;color:var(--primary);font-size:16px;white-space:nowrap}
-.mc-weight small{font-size:11px;font-weight:500;color:var(--muted)}
-.mc-dims{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
-.mc-dims div{background:var(--bg);border-radius:8px;padding:5px 8px}
-.mc-dims label{display:block;font-size:11px;color:var(--muted)}
-.mc-dims b{font-size:15px}
-.mc-cust{margin-top:8px;font-size:13px;color:var(--text)}
+.check{display:none;width:1.5rem;height:1.5rem;border-radius:50%;border:2px solid var(--muted);flex-shrink:0;align-items:center;justify-content:center;color:#fff;font-size:.9rem;font-weight:800}
+.select-mode .check{display:flex}
+.mold-card.selected .check{background:var(--primary);border-color:var(--primary)}
+.badge{font-size:.77rem;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--cbg,#eee);color:var(--c,#555);white-space:nowrap}
+.mc-model{font-size:1.2rem;font-weight:800;color:var(--blue);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mc-weight{font-weight:800;color:var(--primary);font-size:1.07rem;white-space:nowrap}
+.mc-weight small{font-size:.73rem;font-weight:500;color:var(--muted)}
+.mc-dims{display:grid;grid-template-columns:repeat(auto-fit,minmax(5.5rem,1fr));gap:6px;margin-top:10px}
+.mc-dims div{background:var(--soft);border-radius:8px;padding:5px 8px;min-width:0}
+.mc-dims label{display:block;font-size:.73rem;color:var(--muted)}
+.mc-dims b{font-size:1rem}
+.mc-cust{margin-top:8px;font-size:.87rem}
 .mc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:9px;gap:8px}
-.mc-actions{display:flex;align-items:center;gap:10px}
-.chev{color:var(--primary);font-size:13px;font-weight:700}
+.mc-actions{display:flex;align-items:center;gap:8px}
+.select-mode .mc-actions{display:none}
+.chev{color:var(--primary);font-size:1.2rem;font-weight:700;padding-left:2px}
 .load-more{margin-top:12px}
 
 /* 分類顏色 */
 .c0{--c:#2e7d5b;--cbg:#e3f3ea}.c1{--c:#b26a00;--cbg:#fff1db}.c2{--c:#8a4f00;--cbg:#fbe7c8}
 .c3{--c:#1f6fb2;--cbg:#e1eefa}.c4{--c:#5b4bb7;--cbg:#ebe8fa}.c5{--c:#a33a7e;--cbg:#f8e4f1}
 .c6{--c:#c2185b;--cbg:#fde4ee}.c7{--c:#00838f;--cbg:#ddf3f5}.c8{--c:#666;--cbg:#eee}
+html[data-theme="dark"] .c0{--c:#66c795;--cbg:#1e3a2c}html[data-theme="dark"] .c1{--c:#f0b25c;--cbg:#3a2c16}html[data-theme="dark"] .c2{--c:#e0a35a;--cbg:#382a17}
+html[data-theme="dark"] .c3{--c:#72b3ec;--cbg:#1a2f44}html[data-theme="dark"] .c4{--c:#a99cf0;--cbg:#28243f}html[data-theme="dark"] .c5{--c:#e58ac4;--cbg:#3b2232}
+html[data-theme="dark"] .c6{--c:#f27ba6;--cbg:#3d1f2b}html[data-theme="dark"] .c7{--c:#5fd0da;--cbg:#173539}html[data-theme="dark"] .c8{--c:#bbb;--cbg:#2e2e2e}
+@media (prefers-color-scheme:dark){
+html[data-theme="auto"] .c0{--c:#66c795;--cbg:#1e3a2c}html[data-theme="auto"] .c1{--c:#f0b25c;--cbg:#3a2c16}html[data-theme="auto"] .c2{--c:#e0a35a;--cbg:#382a17}
+html[data-theme="auto"] .c3{--c:#72b3ec;--cbg:#1a2f44}html[data-theme="auto"] .c4{--c:#a99cf0;--cbg:#28243f}html[data-theme="auto"] .c5{--c:#e58ac4;--cbg:#3b2232}
+html[data-theme="auto"] .c6{--c:#f27ba6;--cbg:#3d1f2b}html[data-theme="auto"] .c7{--c:#5fd0da;--cbg:#173539}html[data-theme="auto"] .c8{--c:#bbb;--cbg:#2e2e2e}
+}
+
+/* ===== 多選分享列 ===== */
+.select-bar{position:fixed;left:10px;right:10px;bottom:calc(var(--nav-h) + var(--safe-b) + 10px);z-index:35;background:var(--card);border:1.5px solid var(--secondary);border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.2);padding:10px 12px;max-width:740px;margin:0 auto}
+.select-bar .row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+.select-bar .row1 b{font-size:1rem}
+.select-bar .row2{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
 
 /* ===== 表單 ===== */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.field{display:flex;flex-direction:column;gap:5px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field.full{grid-column:1/-1}
-.field label{font-size:13px;font-weight:700;color:var(--muted)}
+.field label{font-size:.87rem;font-weight:700;color:var(--muted)}
 .field label .req{color:var(--danger)}
-.field input,.field select{height:46px;border:1.5px solid var(--line);border-radius:10px;padding:0 12px;background:#fff;outline:none;width:100%}
+.field input,.field select{height:3.07rem;border:1.5px solid var(--line);border-radius:10px;padding:0 12px;background:var(--input);outline:none;width:100%;min-width:0}
 .field input:focus,.field select:focus{border-color:var(--primary)}
-code{background:var(--bg);padding:2px 6px;border-radius:5px;font-size:12.5px;word-break:break-all}
-.upload-zone{border:2px dashed var(--secondary);border-radius:12px;padding:22px 14px;text-align:center;background:#fafcfb;margin-top:12px}
-.status-msg{margin-top:12px;font-weight:700;font-size:14px}
+code{background:var(--soft);padding:2px 6px;border-radius:5px;font-size:.83rem;word-break:break-all}
+.upload-zone{border:2px dashed var(--secondary);border-radius:12px;padding:18px 14px;text-align:center;background:var(--soft);margin-top:12px}
+.status-msg{margin-top:12px;font-weight:700;font-size:.93rem}
 .btn-row{display:flex;flex-direction:column;gap:10px}
+.btn-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.preview-box{margin-top:14px;border:1.5px solid var(--secondary);border-radius:12px;padding:12px;background:var(--soft)}
+.preview-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.preview-stats div{background:var(--card);border-radius:10px;padding:8px;text-align:center}
+.preview-stats b{display:block;font-size:1.4rem}
+.preview-stats span{font-size:.8rem;color:var(--muted)}
+.preview-list{font-size:.85rem;line-height:1.7;max-height:14rem;overflow:auto;background:var(--card);border-radius:10px;padding:8px 10px;margin-bottom:10px}
+.tag-new{color:#2e7d5b;font-weight:700}.tag-upd{color:#b26a00;font-weight:700}.tag-same{color:var(--muted)}
+ol.steps{padding-left:1.3rem;font-size:.9rem;line-height:1.75;color:var(--text)}
 
-/* ===== 模具詳細資料（全螢幕頁） ===== */
+/* ===== 全螢幕詳細頁 ===== */
 .sheet{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .25s ease;visibility:hidden}
 .sheet.active{transform:none;visibility:visible}
-.sheet-header{background:var(--primary);color:#fff;padding:calc(8px + var(--safe-t)) 8px 8px;display:flex;align-items:center;gap:6px;flex-shrink:0}
-.back-btn{border:none;background:rgba(255,255,255,.15);color:#fff;width:40px;height:40px;border-radius:10px;font-size:22px;flex-shrink:0}
+.sheet-header{background:var(--header);color:#fff;padding:calc(8px + var(--safe-t)) 8px 8px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.back-btn{border:none;background:rgba(255,255,255,.15);color:#fff;width:2.7rem;height:2.7rem;border-radius:10px;font-size:1.5rem;flex-shrink:0}
 .sheet-header .t{flex:1;min-width:0}
-.sheet-header h3{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sheet-header p{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-header h3{font-size:1.13rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-header p{font-size:.8rem;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(30px + var(--safe-b));max-width:760px;width:100%;margin:0 auto}
 .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.info-grid div{background:var(--bg);border-radius:9px;padding:7px 9px;min-width:0}
-.info-grid label{display:block;font-size:11px;color:var(--muted)}
-.info-grid b{font-size:14.5px;word-break:break-all}
+.info-grid div{background:var(--soft);border-radius:9px;padding:7px 9px;min-width:0}
+.info-grid label{display:block;font-size:.73rem;color:var(--muted)}
+.info-grid b{font-size:.97rem;word-break:break-all}
+.share-row{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;margin-top:12px}
 .variant-row{display:flex;gap:8px;align-items:stretch}
-.variant-row select{flex:1;min-width:0;height:44px;border:1.5px solid var(--secondary);border-radius:10px;padding:0 10px;background:#fff;font-weight:700}
+.variant-row select{flex:1;min-width:0;height:2.95rem;border:1.5px solid var(--secondary);border-radius:10px;padding:0 10px;background:var(--input);font-weight:700}
 .section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.section-title h4{color:var(--primary);font-size:15.5px}
-.section-title h4 span{background:var(--secondary);color:#fff;border-radius:10px;padding:0 8px;font-size:12px;margin-left:4px}
-
-.rec-card{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border:1.5px solid var(--line);border-left:5px solid #2e7d5b}
+.section-title h4{color:var(--primary);font-size:1.03rem}
+.section-title h4 span{background:var(--secondary);color:#fff;border-radius:10px;padding:0 8px;font-size:.8rem;margin-left:4px}
+.rec-card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:10px;border:1.5px solid var(--line);border-left:5px solid #2e7d5b}
 .rec-card.st-try{border-left-color:#e6a100}
 .rec-card.st-bad{border-left-color:var(--danger)}
 .rec-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .rec-no{font-weight:800;color:var(--muted)}
-.status-select{flex:1;height:38px;border:1.5px solid var(--line);border-radius:9px;padding:0 8px;background:#fff;font-weight:700}
+.status-select{flex:1;height:2.55rem;border:1.5px solid var(--line);border-radius:9px;padding:0 8px;background:var(--input);font-weight:700}
 .rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .rf{display:flex;flex-direction:column;gap:3px;min-width:0}
 .rf.full{grid-column:1/-1}
-.rf span{font-size:12px;color:var(--muted);font-weight:700}
-.rf input{height:42px;border:1.5px solid var(--line);border-radius:9px;padding:0 10px;width:100%;min-width:0;background:#fff;outline:none}
+.rf span{font-size:.8rem;color:var(--muted);font-weight:700}
+.rf input{height:2.8rem;border:1.5px solid var(--line);border-radius:9px;padding:0 10px;width:100%;min-width:0;background:var(--input);outline:none}
 .rf input:focus{border-color:var(--primary)}
-input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
+input[type=date]{-webkit-appearance:none;appearance:none;min-height:2.8rem}
+
+/* ===== 設定視窗 ===== */
+.modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:.2s}
+.modal.active{opacity:1;visibility:visible}
+.modal-panel{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 18px calc(22px + var(--safe-b));transform:translateY(30px);transition:.2s}
+.modal.active .modal-panel{transform:none}
+.modal-panel h3{font-size:1.13rem;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.set-label{font-size:.87rem;font-weight:700;color:var(--muted);margin:12px 0 6px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--soft);border-radius:12px;padding:4px;gap:4px}
+.seg button{border:none;background:none;border-radius:9px;padding:.65rem .2rem;font-weight:700;color:var(--muted);font-size:.93rem}
+.seg button.on{background:var(--card);color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.font-preview{margin-top:14px;background:var(--soft);border-radius:12px;padding:12px;font-size:1rem}
 
 /* ===== 底部導覽 ===== */
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:var(--safe-b);box-shadow:0 -2px 10px rgba(0,0,0,.05)}
-.nav-btn{flex:1;height:var(--nav-h);border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:11.5px}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:var(--safe-b);box-shadow:0 -2px 10px rgba(0,0,0,.06)}
+.nav-btn{flex:1;height:var(--nav-h);border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:min(.77rem,13px)}
 .nav-btn svg{width:24px;height:24px}
 .nav-btn.active{color:var(--primary);font-weight:700}
 
-.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);transform:translate(-50%,20px);background:rgba(30,40,34,.92);color:#fff;padding:10px 18px;border-radius:22px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:88vw;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);transform:translate(-50%,20px);background:rgba(30,40,34,.94);color:#fff;padding:10px 18px;border-radius:22px;font-size:.93rem;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:88vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
-/* ===== PDF 匯出版面（畫面外） ===== */
+/* ===== PDF 匯出版面（畫面外，固定淺色） ===== */
 #pdf-export-container{display:none;position:fixed;left:-10000px;top:0;width:190mm;background:#fff;color:#000}
-.pdf-page{background:#fff;color:#000;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif}
+.pdf-page{background:#fff;color:#000;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;font-size:12px}
 .pdf-head{text-align:center;margin-bottom:12px}
 .pdf-head h2{color:#4A7C59;font-size:18px}
 .pdf-head p{font-size:11px;color:#555;margin-top:4px}
 .pdf-head hr{margin-top:8px;border:none;border-top:1px solid #4A7C59}
 .pdf-table{width:100%;border-collapse:collapse;font-size:10px}
-.pdf-table th,.pdf-table td{border:1px solid #333;padding:3px 5px;text-align:left}
+.pdf-table th,.pdf-table td{border:1px solid #333;padding:3px 5px;text-align:left;color:#000}
 .pdf-table th{background:#4A7C59;color:#fff}
 .pdf-foot{text-align:right;font-size:9px;color:#777;margin-top:4px}
 
@@ -181,7 +261,10 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
 
 <header class="app-header">
   <div class="header-logo">昇</div>
-  <div><h1>昇祿鋁業</h1><small>模具雲端管理系統</small></div>
+  <div class="ttl"><h1>昇祿鋁業</h1><small>模具雲端管理系統</small></div>
+  <button class="icon-btn" onclick="openSettings()" aria-label="外觀設定">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+  </button>
 </header>
 
 <main>
@@ -201,9 +284,11 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
       <div class="quick-actions">
         <button class="btn" onclick="switchView('search');setTimeout(()=>document.getElementById('searchInput').focus(),200)">🔍 搜尋模具</button>
         <button class="btn outline" onclick="switchView('add')">＋ 新增模具</button>
+        <button class="btn outline" onclick="switchView('import')">📊 Excel 更新</button>
+        <button class="btn outline" onclick="openSettings()">🌓 外觀設定</button>
       </div>
     </div>
-    <div class="note">💾 您新增、修改的資料（含修模版本與生產紀錄）會自動儲存在這台裝置的瀏覽器中。如需換手機或保存備份，請到「匯入」頁使用「匯出完整備份」。</div>
+    <div class="note">💾 您新增、修改的資料（含修模版本與生產紀錄）會自動儲存在這台裝置的瀏覽器中。如需換手機或保存備份，請到「匯入/備份」頁使用「匯出完整備份」。</div>
   </section>
 
   <!-- 搜尋頁 -->
@@ -211,13 +296,25 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
     <div class="search-sticky">
       <div class="search-box">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input type="search" id="searchInput" placeholder="型號、客戶、尺寸、米重…" autocomplete="off" enterkeyhint="search">
+        <input type="search" id="searchInput" placeholder="型號、客戶編號、客戶名稱" autocomplete="off" enterkeyhint="search">
         <button class="clear-btn" id="clearSearch" hidden aria-label="清除">×</button>
       </div>
       <div class="chips" id="catChips"></div>
-      <div class="toolbar">
-        <span class="count" id="resultCount"></span>
-        <button class="btn dark sm" id="exportPdfBtn" onclick="exportToPDF()">匯出 PDF（不含異型材）</button>
+    </div>
+
+    <div class="dim-panel">
+      <div class="dim-panel-head">
+        <b id="dimTitle">尺寸條件（mm）</b>
+        <button class="btn-mini" id="clearDims">清除尺寸</button>
+      </div>
+      <div class="dim-grid" id="dimGrid"></div>
+    </div>
+
+    <div class="toolbar">
+      <span class="count" id="resultCount"></span>
+      <div class="acts">
+        <button class="btn outline sm" id="selectModeBtn" onclick="toggleSelectMode()">☑ 選取分享</button>
+        <button class="btn dark sm" id="exportPdfBtn" onclick="exportToPDF()">匯出 PDF</button>
       </div>
     </div>
     <div class="mold-list" id="moldList"></div>
@@ -233,10 +330,10 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
         <div class="field full"><label>型號 <span class="req">*</span></label><input type="text" id="formModel" required placeholder="例如 1A514" autocapitalize="characters"></div>
         <div class="field"><label>客戶編號</label><input type="text" id="formCustomer" placeholder="選填"></div>
         <div class="field"><label>客戶名稱</label><input type="text" id="formCustomerName" placeholder="選填"></div>
-        <div class="field"><label>外徑/寬度 (mm)</label><input type="number" step="any" inputmode="decimal" id="formDim1"></div>
-        <div class="field"><label>內徑/高度 (mm)</label><input type="number" step="any" inputmode="decimal" id="formDim2"></div>
-        <div class="field"><label>厚度 (mm)</label><input type="number" step="any" inputmode="decimal" id="formThickness"></div>
-        <div class="field"><label>米重/單重 (kg/m) <span class="req">*</span></label><input type="number" step="any" inputmode="decimal" id="formWeight" required></div>
+        <div class="field"><label id="lblDim1">外徑/寬度 (mm)</label><input type="text" inputmode="decimal" id="formDim1"></div>
+        <div class="field"><label id="lblDim2">內徑/高度 (mm)</label><input type="text" inputmode="decimal" id="formDim2"></div>
+        <div class="field"><label id="lblThk">厚度 (mm)</label><input type="text" inputmode="decimal" id="formThickness"></div>
+        <div class="field"><label>米重/單重 (kg/m) <span class="req">*</span></label><input type="text" inputmode="decimal" id="formWeight" required></div>
         <div class="field full"><button type="submit" class="btn block">建立模具資料</button></div>
       </form>
     </div>
@@ -245,17 +342,28 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
   <!-- 匯入 -->
   <section id="view-import" class="view">
     <div class="card">
-      <h2>批次匯入（CSV 格式）</h2>
-      <p class="muted" style="line-height:1.7">
-        請將資料另存為 <b>.csv（逗號分隔）</b> 後上傳，支援 UTF-8 與 Excel 中文（Big5）編碼。<br>
-        欄位順序：<code>分類, 客戶編號, 客戶名稱, 模具編號(型號), 外徑, 內徑, 厚度, 米重(單重)</code><br>
-        例如：<code>圓管, C001, 昇祿實業, 1A514, 8.5, 4.5, 2, 0.111</code>
+      <h2>📊 Excel 批次更新（重複自動覆蓋）</h2>
+      <ol class="steps">
+        <li>先按「匯出全部資料 (Excel)」取得目前資料，或下載空白範本。</li>
+        <li>在 Excel 修改或新增整筆資料後存檔（.xlsx / .xls / .csv 皆可）。</li>
+        <li>上傳檔案，系統會先顯示預覽，確認後才套用。</li>
+      </ol>
+      <p class="muted" style="margin-top:8px;line-height:1.7">
+        欄位：<code>分類, 客戶編號, 客戶名稱, 型號, 外徑/寬度, 內徑/高度, 厚度, 米重</code><br>
+        • 以「分類＋型號」判斷是否重複（圓條類以「分類＋外徑」），重複的會<b>自動覆蓋</b>基本資料，沒有的就新增。<br>
+        • 修模版本與生產紀錄會保留，不會被覆蓋。Excel 中空白的儲存格不會清除原有資料。<br>
+        • 多個工作表會一起讀取；若工作表沒有「分類」欄，會以工作表名稱（如「圓管」）當作分類。
       </p>
+      <div class="btn-row2">
+        <button class="btn outline sm" onclick="exportExcel(false)">⬇ 匯出全部資料 (Excel)</button>
+        <button class="btn outline sm" onclick="exportExcel(true)">⬇ 下載空白範本</button>
+      </div>
       <div class="upload-zone">
-        <input type="file" id="csvFileInput" accept=".csv,text/csv" hidden>
-        <button type="button" class="btn dark" onclick="document.getElementById('csvFileInput').click()">選擇 CSV 檔案</button>
+        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
+        <button type="button" class="btn dark" onclick="document.getElementById('excelFileInput').click()">選擇 Excel / CSV 檔案</button>
         <p id="upload-status" class="status-msg"></p>
       </div>
+      <div id="importPreview" class="preview-box" hidden></div>
     </div>
     <div class="card">
       <h2>資料備份與還原</h2>
@@ -269,6 +377,16 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
     </div>
   </section>
 </main>
+
+<!-- 多選分享列 -->
+<div class="select-bar" id="selectBar" hidden>
+  <div class="row1"><b id="selCount">已選 0 筆</b><button class="btn-mini" onclick="selectAllShown()">全選目前結果</button></div>
+  <div class="row2">
+    <button class="btn outline sm" onclick="toggleSelectMode(false)">取消</button>
+    <button class="btn dark sm" onclick="copySelected()">複製</button>
+    <button class="btn line sm" onclick="shareSelected()">LINE 分享</button>
+  </div>
+</div>
 
 <!-- 底部導覽 -->
 <nav class="bottom-nav">
@@ -287,6 +405,13 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
   <div class="sheet-body" id="sheetBody">
     <div class="card">
       <div class="info-grid" id="baseInfo"></div>
+      <div class="share-row">
+        <button class="btn line sm" onclick="shareCurrentMold()">LINE 分享此模具</button>
+        <button class="btn outline sm" onclick="copyCurrentMold()">複製文字</button>
+      </div>
+      <label class="muted" style="display:flex;align-items:center;gap:6px;margin-top:8px">
+        <input type="checkbox" id="shareWithRecords" checked style="width:1.1rem;height:1.1rem"> 分享時包含目前修模版本與最近 5 筆紀錄
+      </label>
     </div>
     <div class="card">
       <div class="section-title"><h4>衍生型號（修模版本）</h4></div>
@@ -297,7 +422,7 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
       <div class="form-grid" style="margin-top:12px">
         <div class="field full"><label>開模日期</label><input type="date" id="detOpenDate"></div>
         <div class="field"><label style="color:#d9534f">包心長度（頭）</label><input type="text" id="detCoreHead"></div>
-        <div class="field"><label style="color:#2980b9">包心長度（尾）</label><input type="text" id="detCoreTail"></div>
+        <div class="field"><label style="color:#3a8fd0">包心長度（尾）</label><input type="text" id="detCoreTail"></div>
       </div>
     </div>
     <div class="section-title">
@@ -305,6 +430,22 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:42px}
       <button class="btn dark sm" onclick="addProductionRecord()">＋ 新增紀錄</button>
     </div>
     <div id="recordsList"></div>
+  </div>
+</div>
+
+<!-- 外觀設定 -->
+<div class="modal" id="settingsModal">
+  <div class="modal-panel">
+    <h3>外觀設定 <button class="btn-mini" onclick="closeSettings()">完成</button></h3>
+    <div class="set-label">顯示模式</div>
+    <div class="seg" id="segTheme">
+      <button data-v="auto">跟隨系統</button><button data-v="light">☀️ 淺色</button><button data-v="dark">🌙 深色</button>
+    </div>
+    <div class="set-label">字體大小</div>
+    <div class="seg" id="segFont">
+      <button data-v="0.9">小</button><button data-v="1">標準</button><button data-v="1.12">大</button><button data-v="1.25">特大</button>
+    </div>
+    <div class="font-preview">預覽：1A514　外徑 8.5 / 內徑 4.5 / 厚度 2　米重 0.111 kg/m</div>
   </div>
 </div>
 
@@ -1807,9 +1948,25 @@ const rawCSVData = `
 `.trim();
 
 const STORE_KEY = 'shenglu_mold_db_v1';
+const SETTINGS_KEY = 'shenglu_mold_settings';
 const DELETE_PWD = '16234475';
 const CATEGORIES = ['圓管','圓條','7"圓條','方條','方管','六角管','六角條','角鋁','異型材'];
 const PAGE_SIZE = 40;
+
+// 各分類的尺寸欄位與名稱（搜尋欄、卡片、詳細頁共用）
+const DIM_LABELS = {
+  '圓管':   { dim1: '外徑', dim2: '內徑', thickness: '厚度' },
+  '圓條':   { dim1: '外徑' },
+  '7"圓條': { dim1: '外徑' },
+  '方條':   { dim1: '寬度', thickness: '厚度' },
+  '方管':   { dim1: '外徑(寬)', dim2: '內徑(高)', thickness: '厚度' },
+  '六角管': { dim1: '對邊(外)', dim2: '內徑' },
+  '六角條': { dim1: '對邊' },
+  '角鋁':   { dim1: '邊長A', dim2: '邊長B', thickness: '厚度' },
+  '異型材': { dim1: '寬度', dim2: '高度', thickness: '厚度' }
+};
+const GENERIC_DIMS = { dim1: '外徑/寬度', dim2: '內徑/高度', thickness: '厚度' };
+const dimLabels = cat => DIM_LABELS[cat] || GENERIC_DIMS;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1861,10 +2018,11 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && sav
 let toastTimer;
 function toast(msg) {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
 }
 
 function switchView(name) {
+  if (name !== 'search' && selectMode) toggleSelectMode(false);
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   window.scrollTo(0, 0);
@@ -1875,6 +2033,28 @@ document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', (
 function setHeaderHeight() {
   document.documentElement.style.setProperty('--header-h', document.querySelector('.app-header').offsetHeight + 'px');
 }
+
+// ---------- 外觀設定（深淺色、字體大小） ----------
+let settings = { theme: 'auto', fs: 1 };
+try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) {}
+function isDark() {
+  return settings.theme === 'dark' || (settings.theme === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+}
+function applySettings() {
+  document.documentElement.setAttribute('data-theme', settings.theme);
+  document.documentElement.style.setProperty('--fs', settings.fs);
+  $('metaTheme').setAttribute('content', isDark() ? '#22392a' : '#4A7C59');
+  document.querySelectorAll('#segTheme button').forEach(b => b.classList.toggle('on', b.dataset.v === settings.theme));
+  document.querySelectorAll('#segFont button').forEach(b => b.classList.toggle('on', Number(b.dataset.v) === Number(settings.fs)));
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+  requestAnimationFrame(setHeaderHeight);
+}
+function openSettings() { $('settingsModal').classList.add('active'); }
+function closeSettings() { $('settingsModal').classList.remove('active'); }
+$('settingsModal').addEventListener('click', e => { if (e.target.id === 'settingsModal') closeSettings(); });
+$('segTheme').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; settings.theme = b.dataset.v; applySettings(); });
+$('segFont').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; settings.fs = Number(b.dataset.v); applySettings(); });
+if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySettings); } catch (e) {} }
 
 // ---------- 首頁 ----------
 function updateDashboard() {
@@ -1891,37 +2071,85 @@ function updateDashboard() {
 }
 $('catGrid').addEventListener('click', e => {
   const t = e.target.closest('.cat-tile'); if (!t) return;
-  setCategory(t.dataset.cat); $('searchInput').value = ''; handleFilter(); switchView('search');
+  $('searchInput').value = ''; setCategory(t.dataset.cat); handleFilter(); switchView('search');
 });
 
 // ---------- 搜尋 ----------
 let currentCat = 'ALL', filtered = [], shownCount = 0;
+const dimFilter = { dim1: '', dim2: '', thickness: '' };
+let tolerance = 0;
 
 function renderChips() {
   $('catChips').innerHTML = ['ALL', ...CATEGORIES].map(c =>
     `<button class="chip ${c === currentCat ? 'active' : ''}" data-cat="${esc(c)}">${c === 'ALL' ? '全部' : esc(c)}</button>`).join('');
 }
-function setCategory(c) { currentCat = c; renderChips(); }
+function setCategory(c) { currentCat = c; renderChips(); renderDimFields(); }
 $('catChips').addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
   setCategory(b.dataset.cat); handleFilter();
   b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
 });
 
+// 依分類顯示對應的尺寸搜尋欄位
+function renderDimFields() {
+  const labels = currentCat === 'ALL' ? GENERIC_DIMS : dimLabels(currentCat);
+  Object.keys(dimFilter).forEach(k => { if (!labels[k]) dimFilter[k] = ''; });
+  $('dimTitle').textContent = (currentCat === 'ALL' ? '尺寸條件' : `${currentCat} 尺寸條件`) + '（mm）';
+  $('dimGrid').innerHTML = Object.entries(labels).map(([k, l]) =>
+    `<label class="dim-field"><span>${esc(l)}</span><input type="text" inputmode="decimal" data-k="${k}" value="${esc(dimFilter[k])}" class="${dimFilter[k] ? 'filled' : ''}" placeholder="不限" enterkeyhint="search"></label>`
+  ).join('') +
+  `<label class="dim-field"><span>允許誤差</span><select id="tolSelect">
+     ${[[0,'精確'],[0.05,'±0.05'],[0.1,'±0.1'],[0.5,'±0.5'],[1,'±1'],[2,'±2']].map(([v,t]) => `<option value="${v}" ${tolerance === v ? 'selected' : ''}>${t}</option>`).join('')}
+   </select></label>`;
+}
+let dimTimer;
+$('dimGrid').addEventListener('input', e => {
+  const k = e.target.dataset.k; if (!k) return;
+  dimFilter[k] = e.target.value.replace(/[^\d.]/g, '');
+  if (e.target.value !== dimFilter[k]) e.target.value = dimFilter[k];
+  e.target.classList.toggle('filled', !!dimFilter[k]);
+  clearTimeout(dimTimer); dimTimer = setTimeout(handleFilter, 200);
+});
+$('dimGrid').addEventListener('change', e => { if (e.target.id === 'tolSelect') { tolerance = Number(e.target.value); handleFilter(); } });
+$('dimGrid').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+$('clearDims').addEventListener('click', () => { Object.keys(dimFilter).forEach(k => dimFilter[k] = ''); renderDimFields(); handleFilter(); });
+
+// 文字搜尋只比對型號、客戶，不比對尺寸數字
 function matchKeyword(m, k) {
   if (!k) return true;
-  return [m.model, m.customerId, m.customerName, m.category, m.dim1, m.dim2, m.thickness, m.weight, displayName(m)]
-    .some(v => String(v || '').toLowerCase().includes(k));
+  return [m.model, m.customerId, m.customerName].some(v => String(v || '').toLowerCase().includes(k));
+}
+function activeDims() {
+  return Object.entries(dimFilter).filter(([, v]) => v !== '' && !isNaN(parseFloat(v))).map(([k, v]) => [k, parseFloat(v)]);
+}
+function dimDeviation(m, dims) {
+  let total = 0;
+  for (const [k, q] of dims) {
+    const v = parseFloat(m[k]);
+    if (isNaN(v)) return -1;
+    const d = Math.abs(v - q);
+    if (d > tolerance + 1e-9) return -1;
+    total += d;
+  }
+  return total;
 }
 function getFiltered(excludeOdd = false) {
   const k = $('searchInput').value.toLowerCase().trim();
-  return moldDatabase.filter(m =>
-    (!excludeOdd || m.category !== '異型材') &&
-    (currentCat === 'ALL' || m.category === currentCat) &&
-    matchKeyword(m, k));
+  const dims = activeDims();
+  const out = [];
+  moldDatabase.forEach(m => {
+    if (excludeOdd && m.category === '異型材') return;
+    if (currentCat !== 'ALL' && m.category !== currentCat) return;
+    if (!matchKeyword(m, k)) return;
+    if (dims.length) { const d = dimDeviation(m, dims); if (d < 0) return; out.push([m, d]); }
+    else out.push([m, 0]);
+  });
+  if (dims.length && tolerance > 0) out.sort((a, b) => a[1] - b[1]); // 有誤差時，最接近的排前面
+  return out.map(x => x[0]);
 }
 function updateCount() {
-  $('resultCount').textContent = `共 ${filtered.length} 筆`;
+  const n = activeDims().length;
+  $('resultCount').textContent = `共 ${filtered.length} 筆${n ? `（尺寸條件 ${n} 項）` : ''}`;
 }
 function handleFilter() {
   filtered = getFiltered();
@@ -1931,19 +2159,22 @@ function handleFilter() {
   updateCount();
   $('clearSearch').hidden = !$('searchInput').value;
 }
-function dimCell(label, v) { return `<div><label>${label}</label><b>${esc(v || '-')}</b></div>`; }
+function dimCells(m) {
+  return Object.entries(dimLabels(m.category)).map(([k, l]) =>
+    `<div><label>${esc(l)}</label><b>${esc(m[k] || '-')}</b></div>`).join('');
+}
 function buildCard(m) {
   const el = document.createElement('article');
-  el.className = 'mold-card ' + catClass(m.category);
+  el.className = 'mold-card ' + catClass(m.category) + (selectedIds.has(m.id) ? ' selected' : '');
   el.dataset.id = m.id;
   const recCount = m.variants.reduce((s, v) => s + v.records.length, 0);
   const cust = [m.customerId, m.customerName].filter(Boolean).join(' · ');
   el.innerHTML = `
-    <div class="mc-top"><span class="badge">${esc(m.category)}</span><span class="mc-model">${esc(displayName(m))}</span><span class="mc-weight">${esc(m.weight)}<small> kg/m</small></span></div>
-    <div class="mc-dims">${dimCell('外徑/寬度', m.dim1)}${dimCell('內徑/高度', m.dim2)}${dimCell('厚度', m.thickness)}</div>
+    <div class="mc-top"><span class="check">✓</span><span class="badge">${esc(m.category)}</span><span class="mc-model">${esc(displayName(m))}</span><span class="mc-weight">${esc(m.weight)}<small> kg/m</small></span></div>
+    <div class="mc-dims">${dimCells(m)}</div>
     ${cust ? `<div class="mc-cust">客戶：${esc(cust)}</div>` : ''}
     <div class="mc-foot"><span class="muted">${m.variants.length > 1 ? `修模 ${m.variants.length} 版 · ` : ''}紀錄 ${recCount} 筆</span>
-      <span class="mc-actions"><button class="btn-mini danger" data-act="delete">刪除</button><span class="chev">查看紀錄 ›</span></span></div>`;
+      <span class="mc-actions"><button class="btn-mini line" data-act="line">LINE</button><button class="btn-mini danger" data-act="delete">刪除</button><span class="chev">›</span></span></div>`;
   return el;
 }
 function renderMore() {
@@ -1973,8 +2204,11 @@ $('clearSearch').addEventListener('click', () => { $('searchInput').value = ''; 
 
 $('moldList').addEventListener('click', e => {
   const card = e.target.closest('.mold-card'); if (!card) return;
-  if (e.target.closest('[data-act="delete"]')) { deleteEntireMold(card.dataset.id, card); return; }
-  openMoldDetails(card.dataset.id);
+  const id = card.dataset.id;
+  if (selectMode) { toggleSelect(id, card); return; }
+  if (e.target.closest('[data-act="delete"]')) { deleteEntireMold(id, card); return; }
+  if (e.target.closest('[data-act="line"]')) { const m = moldDatabase.find(x => x.id === id); if (m) shareToLine(moldShareText(m)); return; }
+  openMoldDetails(id);
 });
 
 // 刪除整筆模具資料（需輸入密碼）
@@ -1986,11 +2220,84 @@ function deleteEntireMold(id, cardEl) {
   if (!confirm('密碼正確。確定要刪除這筆完整的模具資料嗎？此動作無法復原。')) return;
   moldDatabase = moldDatabase.filter(x => x.id !== id);
   filtered = filtered.filter(x => x.id !== id);
+  selectedIds.delete(id);
   if (cardEl) { cardEl.remove(); shownCount = Math.max(0, shownCount - 1); }
   if (!filtered.length) renderMore();
   updateCount(); updateDashboard(); saveDatabase();
   toast('已刪除');
 }
+
+// ---------- LINE 分享 ----------
+function moldShareText(m, variant) {
+  const L = dimLabels(m.category);
+  const lines = [`【${m.category}】${displayName(m)}`];
+  const dims = Object.entries(L).filter(([k]) => m[k]).map(([k, l]) => `${l} ${m[k]}`).join(' / ');
+  if (dims) lines.push(`尺寸：${dims} mm`);
+  lines.push(`米重：${m.weight} kg/m`);
+  if (m.customerId || m.customerName) lines.push('客戶：' + [m.customerId, m.customerName].filter(Boolean).join(' '));
+  if (variant) {
+    lines.push(`修模版本：${variant.vid}`);
+    if (variant.openDate) lines.push(`開模日期：${variant.openDate}`);
+    if (variant.coreHead || variant.coreTail) lines.push(`包心長度：頭 ${variant.coreHead || '-'} / 尾 ${variant.coreTail || '-'}`);
+    const recs = variant.records.slice(-5);
+    if (recs.length) {
+      lines.push(`生產紀錄（最近 ${recs.length} 筆）：`);
+      recs.forEach(r => lines.push(`・${r.date || '-'} ${r.status}｜單重 ${r.actWeight || '-'}｜錠數 ${r.ingots || '-'}｜總重 ${r.totalW || '-'}${r.dims ? '｜尺寸 ' + r.dims : ''}${r.nitrideD ? '｜氮化 ' + r.nitrideD : ''}`));
+    }
+  }
+  return lines.join('\n');
+}
+function shareToLine(text) {
+  if (text.length > 4500 && confirm('分享內容較長，LINE 可能無法完整帶入。\n要改為「複製文字」後自行貼到 LINE 嗎？')) { copyText(text); return; }
+  const url = 'https://line.me/R/share?text=' + encodeURIComponent(text);
+  const w = window.open(url, '_blank');
+  if (!w) location.href = url;
+}
+function copyText(text) {
+  const done = () => toast('已複製，可直接貼到 LINE');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { alert(text); }
+  ta.remove();
+}
+
+// 多選分享
+let selectMode = false;
+const selectedIds = new Set();
+function toggleSelectMode(on) {
+  selectMode = on === undefined ? !selectMode : on;
+  if (!selectMode) selectedIds.clear();
+  $('moldList').classList.toggle('select-mode', selectMode);
+  $('selectBar').hidden = !selectMode;
+  $('selectModeBtn').textContent = selectMode ? '✕ 結束選取' : '☑ 選取分享';
+  document.querySelectorAll('#moldList .mold-card').forEach(c => c.classList.toggle('selected', selectedIds.has(c.dataset.id)));
+  updateSelCount();
+  if (selectMode) toast('點選卡片勾選要分享的模具');
+}
+function toggleSelect(id, card) {
+  if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+  card.classList.toggle('selected', selectedIds.has(id));
+  updateSelCount();
+}
+function updateSelCount() { $('selCount').textContent = `已選 ${selectedIds.size} 筆`; }
+function selectAllShown() {
+  filtered.forEach(m => selectedIds.add(m.id));
+  document.querySelectorAll('#moldList .mold-card').forEach(c => c.classList.add('selected'));
+  updateSelCount();
+}
+function selectedShareText() {
+  const items = moldDatabase.filter(m => selectedIds.has(m.id));
+  if (!items.length) { toast('請先勾選模具'); return null; }
+  return `昇祿鋁業 模具資料（${items.length} 筆）\n\n` + items.map(m => moldShareText(m)).join('\n\n');
+}
+function shareSelected() { const t = selectedShareText(); if (t) shareToLine(t); }
+function copySelected() { const t = selectedShareText(); if (t) copyText(t); }
 
 // ---------- 模具詳細資料 ----------
 let currentMoldId = null, currentVariantId = null;
@@ -2002,10 +2309,11 @@ function openMoldDetails(id) {
   const m = getMold(); if (!m) return;
   $('sheetTitle').textContent = `模具紀錄 - ${displayName(m)}`;
   $('sheetSub').textContent = `${m.category} · 客戶：${m.customerName || m.customerId || '未填寫'}`;
+  const L = dimLabels(m.category);
   const info = [['分類', m.category], ['型號', displayName(m)], ['米重 kg/m', m.weight],
-                ['外徑/寬度', m.dim1], ['內徑/高度', m.dim2], ['厚度', m.thickness],
+                ...Object.entries(L).map(([k, l]) => [l, m[k]]),
                 ['客戶編號', m.customerId], ['客戶名稱', m.customerName]];
-  $('baseInfo').innerHTML = info.map(([l, v]) => `<div><label>${l}</label><b>${esc(v || '-')}</b></div>`).join('');
+  $('baseInfo').innerHTML = info.map(([l, v]) => `<div><label>${esc(l)}</label><b>${esc(v || '-')}</b></div>`).join('');
   fillVariantSelect(m);
   currentVariantId = m.variants[0].vid;
   $('variantSelect').value = currentVariantId;
@@ -2015,6 +2323,8 @@ function openMoldDetails(id) {
   $('sheetBody').scrollTop = 0;
   history.pushState({ sheet: true }, '');
 }
+function shareCurrentMold() { const m = getMold(); if (m) shareToLine(moldShareText(m, $('shareWithRecords').checked ? getVariant() : null)); }
+function copyCurrentMold() { const m = getMold(); if (m) copyText(moldShareText(m, $('shareWithRecords').checked ? getVariant() : null)); }
 function fillVariantSelect(m) {
   $('variantSelect').innerHTML = m.variants.map(v => `<option value="${esc(v.vid)}">${esc(v.vid)}</option>`).join('');
 }
@@ -2118,75 +2428,198 @@ function addProductionRecord() {
 
 // ---------- 手動新增 ----------
 $('formCategory').innerHTML = CATEGORIES.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+function updateFormLabels() {
+  const L = dimLabels($('formCategory').value);
+  $('lblDim1').textContent = (L.dim1 || '外徑/寬度') + ' (mm)';
+  $('lblDim2').textContent = (L.dim2 || '內徑/高度') + ' (mm)';
+  $('lblThk').textContent = (L.thickness || '厚度') + ' (mm)';
+}
+$('formCategory').addEventListener('change', updateFormLabels);
 $('addMoldForm').addEventListener('submit', e => {
   e.preventDefault();
   const modelVal = $('formModel').value.trim();
+  const cat = $('formCategory').value;
   if (!modelVal) return;
+  const key = moldKey(cat, modelVal, '');
+  if (moldDatabase.some(m => moldKey(m.category, m.model, m.dim1) === key) &&
+      !confirm(`${cat}「${modelVal}」已存在，仍要再新增一筆嗎？\n（若要更新既有資料，建議使用 Excel 批次更新）`)) return;
   moldDatabase.unshift({
     id: 'new_' + Date.now(),
-    category: $('formCategory').value,
+    category: cat,
     customerId: $('formCustomer').value.trim(),
     customerName: $('formCustomerName').value.trim(),
     model: modelVal,
-    weight: $('formWeight').value,
-    dim1: $('formDim1').value, dim2: $('formDim2').value, thickness: $('formThickness').value,
+    weight: $('formWeight').value.trim(),
+    dim1: $('formDim1').value.trim(), dim2: $('formDim2').value.trim(), thickness: $('formThickness').value.trim(),
     variants: [{ vid: modelVal, openDate: '', coreHead: '', coreTail: '', records: [] }]
   });
   saveDatabase(); updateDashboard();
-  $('addMoldForm').reset();
+  $('addMoldForm').reset(); updateFormLabels();
   toast(`模具 ${modelVal} 成功新增！`);
-  setCategory('ALL'); $('searchInput').value = modelVal; handleFilter(); switchView('search');
+  Object.keys(dimFilter).forEach(k => dimFilter[k] = '');
+  $('searchInput').value = modelVal; setCategory('ALL'); handleFilter(); switchView('search');
 });
 
-// ---------- CSV 批次匯入 ----------
+// ---------- Excel 批次更新（重複自動覆蓋） ----------
+const FIELDS = ['category', 'customerId', 'customerName', 'model', 'dim1', 'dim2', 'thickness', 'weight'];
+const FIELD_NAMES = { category: '分類', customerId: '客戶編號', customerName: '客戶名稱', model: '型號', dim1: '外徑/寬度', dim2: '內徑/高度', thickness: '厚度', weight: '米重' };
+const normNum = v => { const n = parseFloat(v); return isNaN(n) ? String(v).trim() : String(n); };
+// 判斷重複用的鍵：分類＋型號（不分大小寫）；沒有型號（圓條類）則用分類＋外徑
+function moldKey(cat, model, dim1) {
+  cat = String(cat || '').trim();
+  model = String(model || '').trim().replace(/^Ø/, '');
+  return model ? `${cat}|${model.toUpperCase()}` : `${cat}|Ø${normNum(dim1)}`;
+}
+function headerField(h) {
+  h = String(h || '').replace(/\s/g, '').toLowerCase();
+  if (!h) return null;
+  if (/客戶.*(編號|代號|代碼)|客編/.test(h)) return 'customerId';
+  if (/客戶/.test(h)) return 'customerName';
+  if (/分類|類別|類型|category/.test(h)) return 'category';
+  if (/型號|模具|模號|編號|model/.test(h)) return 'model';
+  if (/外徑|寬|對邊|邊長a/.test(h)) return 'dim1';
+  if (/內徑|高|邊長b/.test(h)) return 'dim2';
+  if (/厚/.test(h)) return 'thickness';
+  if (/重/.test(h)) return 'weight';
+  return null;
+}
 async function readTextSmart(file) {
   const buf = await file.arrayBuffer();
   let t = new TextDecoder('utf-8').decode(buf);
-  if (t.includes('\uFFFD')) { try { t = new TextDecoder('big5').decode(buf); } catch (e) {} }
-  return t.replace(/^\uFEFF/, '');
+  if (t.includes('�')) { try { t = new TextDecoder('big5').decode(buf); } catch (e) {} }
+  return t.replace(/^﻿/, '');
 }
-function parseCSVLine(line) {
-  const out = []; let cur = '', q = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (q) {
-      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
-      else if (ch === '"') q = false;
-      else cur += ch;
-    } else if (ch === '"') q = true;
-    else if (ch === ',') { out.push(cur.trim()); cur = ''; }
-    else cur += ch;
+function sheetToItems(aoa, sheetName) {
+  // 在前 5 列內找標題列
+  let headerRow = -1, map = null;
+  for (let r = 0; r < Math.min(5, aoa.length); r++) {
+    const m = {};
+    (aoa[r] || []).forEach((h, ci) => { const f = headerField(h); if (f && m[f] === undefined) m[f] = ci; });
+    if (Object.keys(m).length >= 3 && (m.model !== undefined || m.category !== undefined || m.dim1 !== undefined)) { headerRow = r; map = m; break; }
   }
-  out.push(cur.trim());
-  return out;
+  if (!map) { // 無標題列時採固定欄位順序
+    map = {}; FIELDS.forEach((f, i) => map[f] = i);
+  }
+  const sheetCat = CATEGORIES.includes(String(sheetName).trim()) ? String(sheetName).trim() : '';
+  const items = [];
+  for (let r = headerRow + 1; r < aoa.length; r++) {
+    const row = aoa[r] || [];
+    const get = f => map[f] === undefined ? '' : clean(row[map[f]]);
+    const it = {};
+    FIELDS.forEach(f => it[f] = get(f));
+    ['dim1', 'dim2', 'thickness', 'weight'].forEach(f => it[f] = it[f].replace(/,/g, ''));
+    it.model = it.model.replace(/^Ø/, '');
+    if (!it.category) it.category = sheetCat;
+    if (FIELDS.every(f => !it[f])) continue; // 空白列
+    it._row = `${sheetName} 第 ${r + 1} 列`;
+    items.push(it);
+  }
+  return items;
 }
-$('csvFileInput').addEventListener('change', async e => {
-  const file = e.target.files[0]; if (!file) return;
+let pendingImport = null;
+$('excelFileInput').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
   const st = $('upload-status');
+  if (typeof XLSX === 'undefined') { alert('Excel 元件尚未載入，請確認網路連線後重新整理。'); return; }
+  st.textContent = '讀取中…'; st.style.color = '';
   try {
-    const rows = (await readTextSmart(file)).split(/\r?\n/);
-    const start = /分類|型號|客戶|category/i.test(rows[0] || '') ? 1 : 0;
-    const items = [];
-    for (let i = start; i < rows.length; i++) {
-      const line = rows[i].trim(); if (!line) continue;
-      const c = parseCSVLine(line);
-      if (c.length < 4) continue;
-      const modelVal = c[3] || '未命名';
-      items.push({
-        id: 'import_' + Date.now() + '_' + i,
-        category: c[0] || '圓管', customerId: c[1] || '', customerName: c[2] || '',
-        model: modelVal, dim1: clean(c[4]), dim2: clean(c[5]), thickness: clean(c[6]), weight: clean(c[7]) || '0',
-        variants: [{ vid: modelVal, openDate: '', coreHead: '', coreTail: '', records: [] }]
-      });
-    }
-    moldDatabase.unshift(...items);
-    saveDatabase(); updateDashboard(); handleFilter();
-    st.textContent = `成功匯入 ${items.length} 筆資料！請至「模具搜尋」查看。`; st.style.color = 'green';
+    let wb;
+    if (/\.csv$/i.test(file.name)) wb = XLSX.read(await readTextSmart(file), { type: 'string' });
+    else wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    let rows = [];
+    wb.SheetNames.forEach(n => {
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, defval: '' });
+      rows = rows.concat(sheetToItems(aoa, n));
+    });
+    buildImportPreview(rows, file.name);
+    st.textContent = '';
   } catch (err) {
-    st.textContent = '匯入失敗：' + err.message; st.style.color = '#d9534f';
+    st.textContent = '讀取失敗：' + err.message; st.style.color = '#d9534f';
   }
-  e.target.value = '';
 });
+function buildImportPreview(rows, fileName) {
+  const index = new Map();
+  moldDatabase.forEach(m => {
+    const k = moldKey(m.category, m.model, m.dim1);
+    if (!index.has(k)) index.set(k, []);
+    index.get(k).push(m);
+  });
+  const byKey = new Map(); const skipped = []; let dupInFile = 0;
+  rows.forEach(it => {
+    if (!it.category || (!it.model && !it.dim1)) { skipped.push(it); return; }
+    const k = moldKey(it.category, it.model, it.dim1);
+    if (byKey.has(k)) dupInFile++;
+    byKey.set(k, it); // 檔案內重複時，以最後一列為準
+  });
+  const adds = [], updates = [], same = [];
+  byKey.forEach((it, k) => {
+    const targets = index.get(k);
+    if (!targets) { adds.push(it); return; }
+    const changes = [];
+    const NUM = ['dim1', 'dim2', 'thickness', 'weight'];
+    const eqVal = (a, b, f) => NUM.includes(f) && a !== '' && !isNaN(parseFloat(a)) && !isNaN(parseFloat(b)) ? parseFloat(a) === parseFloat(b) : a === b;
+    FIELDS.forEach(f => { if (f !== 'category' && it[f] !== '' && !eqVal(String(targets[0][f] ?? ''), it[f], f)) changes.push(f); });
+    (changes.length ? updates : same).push({ it, targets, changes });
+  });
+  pendingImport = { adds, updates };
+  const nameOf = it => `${it.category} ${it.model || 'Ø' + it.dim1}`;
+  const lines = [
+    ...adds.slice(0, 30).map(it => `<div><span class="tag-new">新增</span> ${esc(nameOf(it))}</div>`),
+    ...updates.slice(0, 30).map(u => `<div><span class="tag-upd">覆蓋</span> ${esc(nameOf(u.it))}：${u.changes.map(f => `${FIELD_NAMES[f]} ${esc(u.targets[0][f] || '空白')} → ${esc(u.it[f])}`).join('、')}</div>`)
+  ];
+  if (adds.length > 30 || updates.length > 30) lines.push('<div class="muted">…（僅列出前 30 筆新增與前 30 筆覆蓋）</div>');
+  if (!lines.length) lines.push('<div class="muted">沒有需要變更的資料，檔案內容與目前資料相同。</div>');
+  $('importPreview').innerHTML = `
+    <div style="font-weight:700;margin-bottom:8px">📄 ${esc(fileName)}　共讀取 ${rows.length} 列</div>
+    <div class="preview-stats">
+      <div><b class="tag-new">${adds.length}</b><span>新增</span></div>
+      <div><b class="tag-upd">${updates.length}</b><span>覆蓋更新</span></div>
+      <div><b class="tag-same">${same.length}</b><span>無變動</span></div>
+    </div>
+    ${skipped.length || dupInFile ? `<p class="muted" style="margin-bottom:8px">${skipped.length ? `略過 ${skipped.length} 列（缺少分類或型號/外徑）。` : ''}${dupInFile ? `檔案內有 ${dupInFile} 列重複，以最後一列為準。` : ''}</p>` : ''}
+    <div class="preview-list">${lines.join('')}</div>
+    <div class="btn-row2" style="margin-top:0">
+      <button class="btn outline sm" onclick="cancelImport()">取消</button>
+      <button class="btn sm" onclick="applyImport()" ${adds.length + updates.length ? '' : 'disabled'}>確認套用</button>
+    </div>`;
+  $('importPreview').hidden = false;
+  $('importPreview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function cancelImport() { pendingImport = null; $('importPreview').hidden = true; }
+function applyImport() {
+  if (!pendingImport) return;
+  const { adds, updates } = pendingImport;
+  updates.forEach(u => u.targets.forEach(m => u.changes.forEach(f => m[f] = u.it[f])));
+  const now = Date.now();
+  const newMolds = adds.map((it, i) => {
+    const m = { id: `xls_${now}_${i}`, category: it.category, customerId: it.customerId, customerName: it.customerName,
+                model: it.model, dim1: it.dim1, dim2: it.dim2, thickness: it.thickness, weight: it.weight || '0', variants: [] };
+    m.variants.push({ vid: m.model || `${m.category} ${displayName(m)}`, openDate: '', coreHead: '', coreTail: '', records: [] });
+    return m;
+  });
+  moldDatabase.unshift(...newMolds);
+  saveNow(); updateDashboard(); handleFilter();
+  pendingImport = null; $('importPreview').hidden = true;
+  const st = $('upload-status');
+  st.textContent = `✅ 完成：新增 ${adds.length} 筆、覆蓋更新 ${updates.length} 筆。`; st.style.color = 'green';
+  toast('Excel 資料已更新');
+}
+function exportExcel(templateOnly) {
+  if (typeof XLSX === 'undefined') { alert('Excel 元件尚未載入，請確認網路連線後重新整理。'); return; }
+  const header = FIELDS.map(f => FIELD_NAMES[f]);
+  const rows = templateOnly
+    ? [['圓管', 'C001', '範例客戶', '1A999', '25.4', '20', '2.7', '0.521'],
+       ['圓條', '', '', '', '30', '', '', '1.930'],
+       ['方管', '', '', '1B9999', '50', '30', '2', '0.830']]
+    : moldDatabase.map(m => FIELDS.map(f => m[f] || ''));
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  ws['!cols'] = [8, 10, 14, 12, 10, 10, 8, 9].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '模具資料');
+  XLSX.writeFile(wb, templateOnly ? '昇祿模具_匯入範本.xlsx' : `昇祿模具資料_${todayStr().replace(/-/g, '')}.xlsx`);
+  toast(templateOnly ? '範本已下載' : `已匯出 ${rows.length} 筆資料`);
+}
 
 // ---------- 備份 / 還原 ----------
 function downloadBlob(blob, name) {
@@ -2227,7 +2660,7 @@ function exportToPDF() {
   const data = getFiltered(true);
   if (!data.length) { alert('目前搜尋條件下沒有可匯出的資料（或全為異型材已自動排除）。'); return; }
   const btn = $('exportPdfBtn'); const btnText = btn.textContent;
-  btn.textContent = `PDF 處理中…（${data.length} 筆）`; btn.disabled = true;
+  btn.textContent = `處理中…`; btn.disabled = true;
 
   const container = $('pdf-export-container');
   container.innerHTML = ''; container.style.display = 'block';
@@ -2260,8 +2693,10 @@ function exportToPDF() {
 
 // ---------- 初始化 ----------
 document.addEventListener('DOMContentLoaded', () => {
+  applySettings();
   setHeaderHeight(); window.addEventListener('resize', setHeaderHeight);
-  renderChips(); handleFilter(); updateDashboard();
+  renderChips(); renderDimFields(); updateFormLabels();
+  handleFilter(); updateDashboard();
 });
 </script>
 </body>
